@@ -6,7 +6,7 @@ ENV HOME /root
 
 #安装准备
 RUN apk update \
-    && apk add --no-cache  git gcc gcc-c++ make automake autoconf libtool pcre pcre-dev zlib zlib-dev openssl-dev wget vim --repository https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.6/main
+    && apk add --no-cache  git gcc libc-dev make automake autoconf libtool pcre pcre-dev zlib zlib-dev openssl-dev wget vim --repository https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.6/main
 
 
 #下载fastdfs.libfastcommon.nginx插件源码
@@ -28,8 +28,8 @@ RUN cd ${HOME}/fastdfs/ \
     && cp /etc/fdfs/tracker.conf.sample /etc/fdfs/tracker.conf \
     && cp /etc/fdfs/storage.conf.sample /etc/fdfs/storage.conf \
     && cp /etc/fdfs/client.conf.sample /etc/fdfs/client.conf \
-    && cp /usr/local/src/fastdfs/conf/http.conf /etc/fdfs/ \
-    && cp /usr/local/src/fastdfs/conf/mime.types /etc/fdfs/ \
+    && cp ${HOME}/fastdfs/conf/http.conf /etc/fdfs/ \
+    && cp ${HOME}/fastdfs/conf/mime.types /etc/fdfs/ \
     && sed -i "s|/home/yuqing/fastdfs|/var/local/fdfs/tracker|g" /etc/fdfs/tracker.conf \
     && sed -i "s|/home/yuqing/fastdfs|/var/local/fdfs/storage|g" /etc/fdfs/storage.conf \
     && sed -i "s|/home/yuqing/fastdfs|/var/local/fdfs/storage|g" /etc/fdfs/client.conf
@@ -38,12 +38,12 @@ RUN cd ${HOME}/fastdfs/ \
 RUN cd ${HOME} \
     && tar -zxvf nginx-1.15.4.tar.gz  \
     && cd nginx-1.15.4/ \
-    && ./configure --add-module=/usr/local/src/fastdfs-nginx-module/src/ \
+    && ./configure --add-module=${HOME}/fastdfs-nginx-module/src/ \
     && make \
     && make install
 
 # 设置nginx和fastdfs联合环境，并配置nginx
-RUN cp /usr/local/src/fastdfs-nginx-module/src/mod_fastdfs.conf /etc/fdfs \
+RUN cp ${HOME}/fastdfs-nginx-module/src/mod_fastdfs.conf /etc/fdfs \
     && sed -i "s|^store_path0.*$|store_path0=/var/local/fdfs/storage|g" /etc/fdfs/mod_fastdfs.conf \
     && sed -i "s|^url_have_group_name =.*$|url_have_group_name = true|g" /etc/fdfs/mod_fastdfs.conf \
     && cd ${HOME}/fastdfs/conf/ \
@@ -65,7 +65,7 @@ RUN cp /usr/local/src/fastdfs-nginx-module/src/mod_fastdfs.conf /etc/fdfs \
 
 # 清理文件
 RUN rm -rf ${HOME}/*
-
+RUN apk del gcc libc-dev make openssl-dev
 # 配置启动脚本，在启动时中根据环境变量替换nginx端口、fastdfs端口
 # 默认nginx端口
 ENV WEB_PORT 8888
